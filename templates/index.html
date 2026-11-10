@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SplitPal - AI Bill Splitter & PayPal Checkout</title>
+    <!-- Confetti Party Pop Effect -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <style>
+        /* Big Noodle Titling Display Font */
+        @font-face {
+            font-family: 'BigNoodleTitling';
+            src: url('/static/fonts/big_noodle_titling.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        :root {
+            --bg: #000000;
+            --card-bg: rgba(14, 18, 27, 0.82);
+            --card-inner: rgba(22, 29, 44, 0.75);
+            --border: rgba(255, 255, 255, 0.14);
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --primary: #0070ba;
+            --accent-blue: #38bdf8;
+            --bubble-specular: rgba(255, 255, 255, 0.75);
+            --bubble-rim-cyan: rgba(56, 189, 248, 0.45);
+            --bubble-rim-magenta: rgba(236, 72, 153, 0.35);
+            --bubble-rim-green: rgba(34, 197, 94, 0.35);
+            --success-bg: rgba(6, 78, 59, 0.85);
+            --success-text: #34d399;
+            --pending-bg: rgba(120, 53, 15, 0.85);
+            --pending-text: #fde68a;
+            --covered-bg: rgba(49, 46, 129, 0.85);
+            --covered-text: #c7d2fe;
+            --danger-bg: rgba(69, 10, 10, 0.85);
+            --danger-text: #fca5a5;
+        }
+
+        body.light-mode {
+            --bg: #eef2f6;
+            --card-bg: rgba(255, 255, 255, 0.88);
+            --card-inner: rgba(241, 245, 249, 0.85);
+            --border: rgba(0, 0, 0, 0.1);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --primary: #0070ba;
+            --accent-blue: #0284c7;
+            --bubble-specular: rgba(255, 255, 255, 0.95);
+            --bubble-rim-cyan: rgba(56, 189, 248, 0.3);
+            --bubble-rim-magenta: rgba(236, 72, 153, 0.25);
+            --bubble-rim-green: rgba(34, 197, 94, 0.25);
+            --success-bg: #dcfce7;
+            --success-text: #166534;
+            --pending-bg: #fef3c7;
+            --pending-text: #92400e;
+            --covered-bg: #e0e7ff;
+            --covered-text: #3730a3;
+            --danger-bg: #fee2e2;
+            --danger-text: #991b1b;
+        }
+
+        * {
+            box-sizing: border-box;
+            transition: background-color 0.25s, border-color 0.25s, box-shadow 0.25s;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(circle at 20% 15%, rgba(56, 189, 248, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(236, 72, 153, 0.1) 0%, transparent 45%),
+                radial-gradient(circle at 50% 50%, rgba(34, 197, 94, 0.08) 0%, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            margin: 0;
+            padding: 36px 16px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        /* Liquid Bubble Container Card */
+        .main-card {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 760px;
+            padding: 34px 30px;
+            border-radius: 36px;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(28px) saturate(180%);
+            -webkit-backdrop-filter: blur(28px) saturate(180%);
+            box-shadow: 
+                0 30px 80px rgba(0, 0, 0, 0.8),
+                inset 0 1.5px 3px var(--bubble-specular),
+                inset 0 -3px 12px var(--bubble-rim-cyan),
+                inset 2px 0 10px var(--bubble-rim-magenta),
+                inset -2px 0 10px var(--bubble-rim-green);
+            align-self: flex-start;
+            position: relative;
+        }
+
+        /* Top Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .brand-title {
+            font-family: 'BigNoodleTitling', sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 0;
+            font-size: 34px;
+            font-weight: normal;
+            color: var(--text-main);
+            letter-spacing: 1.5px;
+        }
+
+        .brand-badge {
+            font-family: -apple-system, sans-serif;
+            font-size: 11px;
+            background: linear-gradient(135deg, #0070ba, #00c0f3);
+            color: #ffffff;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-weight: 700;
+            text-transform: uppercase;
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.6);
+        }
+
+        /* Liquid Bubble Toggle Button */
+        .theme-toggle-btn {
+            background: var(--card-inner);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 7px 16px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 
+                0 4px 14px rgba(0, 0, 0, 0.4),
+                inset 0 1.5px 2px var(--bubble-specular),
+                inset 0 -2px 5px var(--bubble-rim-cyan);
+            backdrop-filter: blur(14px);
+        }
+        .theme-toggle-btn:hover {
+            transform: scale(1.04);
+            box-shadow: 
+                0 6px 18px rgba(0, 0, 0, 0.5),
+                inset 0 2px 3px var(--bubble-specular),
+                inset 0 -2px 7px var(--bubble-rim-cyan),
+                inset 2px 0 6px var(--bubble-rim-magenta);
+        }
+
+        .tagline {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 18px;
+            line-height: 1.5;
+        }
+
+        /* Quick Example Chips */
+        .quick-examples {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .chip-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .chip-btn {
+            background: var(--card-inner);
+            border: 1px solid var(--border);
+            color: var(--accent-blue);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 9999px;
+            cursor: pointer;
+            box-shadow: 
+                0 2px 8px rgba(0, 0, 0, 0.25),
+                inset 0 1px 2px var(--bubble-specular),
+                inset 0 -1px 3px var(--bubble-rim-cyan);
+        }
+        .chip-btn:hover {
+            transform: translateY(-1px);
+            border-color: var(--accent-blue);
+        }
+
+        /* Bill Input Area */
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 16px;
+            font-size: 14px;
+            background: var(--card-inner);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            resize: vertical;
+            line-height: 1.5;
+            font-family: inherit;
+            box-shadow: 
+                inset 0 2px 6px rgba(0, 0, 0, 0.5),
+                inset 0 -1px 2px var(--bubble-rim-cyan),
+                0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        textarea:focus {
+            outline: none;
+            border-color: rgba(56, 189, 248, 0.6);
+            box-shadow: 
+                0 0 0 3px rgba(56, 189, 248, 0.2),
+                inset 0 2px 6px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Action Buttons: Liquid Bubble Capsules (like "Continue" button in reference image) */
+        .action-bar {
+            display: flex;
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        .btn-split {
+            flex: 2;
+            padding: 14px 20px;
+            font-family: 'BigNoodleTitling', sans-serif;
+            font-size: 21px;
+            letter-spacing: 1.5px;
+            font-weight: normal;
+            background: 
+                radial-gradient(ellipse at 50% 15%, rgba(255, 255, 255, 0.45) 0%, rgba(0, 112, 186, 0.8) 50%, rgba(0, 70, 130, 0.95) 100%);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 9999px;
+            cursor: pointer;
+            box-shadow: 
+                0 8px 24px rgba(0, 112, 186, 0.4),
+                inset 0 2px 3px var(--bubble-specular),
+                inset 0 -3px 8px var(--bubble-rim-cyan),
+                inset 3px 0 10px var(--bubble-rim-magenta),
+                inset -3px 0 10px var(--bubble-rim-green);
+            backdrop-filter: blur(12px);
+        }
+        .btn-split:hover {
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 
+                0 12px 32px rgba(0, 112, 186, 0.6),
+                inset 0 2.5px 4px var(--bubble-specular),
+                inset 0 -4px 10px var(--bubble-rim-cyan),
+                inset 4px 0 12px var(--bubble-rim-magenta),
+                inset -4px 0 12px var(--bubble-rim-green);
+        }
+        .btn-split:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        .btn-voice {
+            flex: 1.2;
+            padding: 14px 18px;
+            font-family: 'BigNoodleTitling', sans-serif;
+            font-size: 19px;
+            letter-spacing: 1.2px;
+            font-weight: normal;
+            background: 
+                radial-gradient(ellipse at 50% 15%, rgba(255, 255, 255, 0.35) 0%, rgba(30, 41, 59, 0.8) 55%, rgba(15, 23, 42, 0.95) 100%);
+            color: var(--text-main);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            border-radius: 9999px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 
+                0 8px 24px rgba(0, 0, 0, 0.5),
+                inset 0 2px 3px var(--bubble-specular),
+                inset 0 -3px 8px var(--bubble-rim-cyan),
+                inset 2px 0 8px var(--bubble-rim-magenta),
+                inset -2px 0 8px var(--bubble-rim-green);
+            backdrop-filter: blur(12px);
+        }
+        .btn-voice:hover {
+            transform: translateY(-2px) scale(1.01);
+            border-color: var(--accent-blue);
+        }
+        .btn-voice.recording {
+            background: 
+                radial-gradient(ellipse at 50% 15%, rgba(255, 255, 255, 0.5) 0%, rgba(220, 38, 38, 0.85) 50%, rgba(153, 27, 27, 0.95) 100%);
+            color: #ffffff;
+            border-color: #ef4444;
+            animation: pulse 1.2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(0.98); }
+        }
+
+        .status-msg {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 8px;
+            min-height: 18px;
+            text-align: left;
+        }
+
+        .error-banner {
+            color: var(--danger-text);
+            background: var(--danger-bg);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            padding: 14px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            margin-top: 14px;
+            display: none;
+            line-height: 1.4;
+            box-shadow: 0 4px 16px rgba(220, 38, 38, 0.2);
+        }
+
+        /* Results Container */
+        #results-container {
+            margin-top: 28px;
+            border-top: 1px solid var(--border);
+            padding-top: 24px;
+            display: none;
+        }
+
+        /* Verified Summary Box (Liquid Rounded Rectangle) */
+        .summary-box {
+            background: var(--card-inner);
+            border: 1px solid var(--border);
+            border-radius: 26px;
+            padding: 20px 24px;
+            margin-bottom: 22px;
+            box-shadow: 
+                0 10px 30px rgba(0, 0, 0, 0.4),
+                inset 0 1.5px 3px var(--bubble-specular),
+                inset 0 -2px 8px var(--bubble-rim-cyan),
+                inset 2px 0 8px var(--bubble-rim-magenta);
+            backdrop-filter: blur(20px);
+        }
+        .summary-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .summary-title {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+        .summary-total {
+            font-family: 'BigNoodleTitling', sans-serif;
+            font-size: 40px;
+            color: var(--accent-blue);
+            margin: 6px 0 14px;
+            letter-spacing: 1.5px;
+        }
+        .payer-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            border-top: 1px solid var(--border);
+            padding-top: 12px;
+        }
+        .payer-select {
+            padding: 6px 14px;
+            border: 1px solid var(--border);
+            border-radius: 9999px;
+            font-size: 13px;
+            background: var(--card-bg);
+            color: var(--text-main);
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: inset 0 1px 2px var(--bubble-specular);
+        }
+
+        /* Person Card: Side-by-side Liquid Bubble Capsule */
+        .person-card {
+            background: var(--card-inner);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 20px 24px;
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 
+                0 12px 32px rgba(0, 0, 0, 0.45),
+                inset 0 1.5px 3px var(--bubble-specular),
+                inset 0 -3px 10px var(--bubble-rim-cyan),
+                inset 2px 0 8px var(--bubble-rim-magenta),
+                inset -2px 0 8px var(--bubble-rim-green);
+            backdrop-filter: blur(16px);
+        }
+
+        .person-info-col {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .person-qr-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #ffffff;
+            padding: 12px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 
+                0 8px 24px rgba(0, 0, 0, 0.35),
+                inset 0 2px 4px rgba(255, 255, 255, 0.9);
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 640px) {
+            .main-card { padding: 22px 18px; border-radius: 28px; }
+            .person-card { flex-direction: column; align-items: stretch; border-radius: 24px; }
+            .person-qr-col { align-self: center; margin-top: 12px; }
+        }
+
+        .person-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .person-name {
+            font-family: 'BigNoodleTitling', sans-serif;
+            font-size: 28px;
+            color: var(--text-main);
+            letter-spacing: 1.2px;
+        }
+        .person-amount {
+            font-family: 'BigNoodleTitling', sans-serif;
+            font-size: 30px;
+            color: var(--accent-blue);
+            letter-spacing: 1.2px;
+        }
+
+        /* Status Badges: Pill Bubbles */
+        .status-badge {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            display: inline-block;
+            box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.4);
+        }
+        .status-pending { background: var(--pending-bg); color: var(--pending-text); border: 1px solid rgba(245, 158, 11, 0.4); }
+        .status-paid { background: var(--success-bg); color: var(--success-text); border: 1px solid rgba(16, 185, 129, 0.4); }
+        .status-covered { background: var(--covered-bg); color: var(--covered-text); border: 1px solid rgba(99, 102, 241, 0.4); }
+
+        .link-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+            flex-wrap: wrap;
+        }
+        .btn-link {
+            font-size: 12px;
+            padding: 8px 13px;
+            background: var(--card-bg);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-radius: 9999px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 
+                0 4px 12px rgba(0, 0, 0, 0.3),
+                inset 0 1px 2px var(--bubble-specular);
+        }
+        .btn-link:hover {
+            transform: translateY(-1px);
+            border-color: var(--accent-blue);
+        }
+        .btn-whatsapp {
+            border-color: rgba(34, 197, 94, 0.45);
+            color: var(--success-text);
+        }
+
+        /* Itemized Per-Person Breakdown Pills */
+        .item-breakdown {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+        .item-pill {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        .item-pill strong {
+            color: var(--text-main);
+        }
+        .item-pill-excluded {
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            background: var(--danger-bg);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            color: var(--danger-text);
+            font-weight: 600;
+        }
+        .capture-ref-pill {
+            display: inline-block;
+            margin-left: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: var(--success-text);
+        }
+
+        /* Receipt Preview Bar */
+        .receipt-preview-bar {
+            display: none;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            background: var(--card-inner);
+            border: 1px solid rgba(56, 189, 248, 0.45);
+            border-radius: 18px;
+            padding: 10px 14px;
+            margin-bottom: 12px;
+            box-shadow: inset 0 1px 2px var(--bubble-specular);
+        }
+        .receipt-preview-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+        .receipt-thumb {
+            width: 42px;
+            height: 42px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .receipt-remove-btn {
+            background: var(--danger-bg);
+            color: var(--danger-text);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: 9999px;
+            padding: 4px 10px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .paypal-box {
+            margin-top: 16px;
+            border-top: 1px dashed var(--border);
+            padding-top: 14px;
+        }
+        .ai-check-note {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-align: center;
+            margin-top: 18px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main-card">
+        <!-- Header -->
+        <div class="header">
+            <h1 class="brand-title">
+                💸 SplitPal
+                <span class="brand-badge">Gemini + PayPal</span>
+            </h1>
+            <button id="theme-toggle" class="theme-toggle-btn" type="button">
+                <span id="theme-icon">☀️</span> <span id="theme-text">Light</span>
+            </button>
+        </div>
+        <div class="tagline">Smart AI bill splitting powered by Gemini multimodal intelligence and instant PayPal payments.</div>
+
+        <!-- Quick Example Chips -->
+        <div class="quick-examples">
+            <span class="chip-label">Try Example:</span>
+            <button class="chip-btn" type="button" onclick="loadExample(1)">🍕 Dinner Split</button>
+            <button class="chip-btn" type="button" onclick="loadExample(2)">☕ Coffee & Pastries</button>
+            <button class="chip-btn" type="button" onclick="loadSampleReceipt()">🧾 Sample Receipt Photo</button>
+        </div>
+
+        <!-- Receipt Photo Preview Bar -->
+        <div id="receipt-preview-bar" class="receipt-preview-bar">
+            <div class="receipt-preview-left">
+                <img id="receipt-thumb" class="receipt-thumb" src="" alt="Receipt">
+                <div>
+                    <div id="receipt-name">Receipt Photo Attached</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">Gemini Vision will read items & prices from this image + rules below</div>
+                </div>
+            </div>
+            <button id="receipt-remove-btn" class="receipt-remove-btn" type="button">✕ Remove</button>
+        </div>
+
+        <!-- Input Area -->
+        <textarea id="bill" rows="5" placeholder="Paste your messy bill, upload a receipt photo + who attended, or tap Record Voice...">People: Yethies, Ravi, Anu. Biryani 3.50, 2 paneer starters 4.00, 3 juices 2.70, tax 5%, Ravi didn't have starters</textarea>
+
+        <!-- Actions -->
+        <input type="file" id="receipt-input" accept="image/*" style="display:none;">
+        <div class="action-bar">
+            <button id="photo-btn" class="btn-voice" type="button">
+                📷 Receipt Photo
+            </button>
+            <button id="voice-btn" class="btn-voice" type="button">
+                🎙️ Record Voice
+            </button>
+            <button id="split-btn" class="btn-split" type="button">
+                ⚡ Split with AI
+            </button>
+        </div>
+        <div id="mic-status" class="status-msg"></div>
+
+        <div id="error-banner" class="error-banner"></div>
+
+        <!-- Results Area -->
+        <div id="results-container">
+            <div id="settled-banner" style="display:none; background: linear-gradient(135deg, #059669, #10b981); color: #ffffff; padding: 16px; border-radius: 12px; margin-bottom: 20px; text-align: center; font-weight: 800; font-size: 15px; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);">
+                🎉 Bill Fully Settled! Everyone has paid their share.
+            </div>
+
+            <div class="summary-box">
+                <div class="summary-header">
+                    <div class="summary-title">Verified Bill Breakdown</div>
+                    <span id="tax-tag" style="font-size: 12px; font-weight: 700; color: var(--text-muted);">Tax 5%</span>
+                </div>
+                <div id="summary-total" class="summary-total">$0.00</div>
+                <div class="payer-row">
+                    <label for="payer-select"><strong>Who paid the restaurant?</strong></label>
+                    <select id="payer-select" class="payer-select"></select>
+                </div>
+            </div>
+
+            <div id="people-list"></div>
+            <div id="ai-check-note" class="ai-check-note"></div>
+        </div>
+    </div>
+
+    <!-- PayPal SDK -->
+    <script src="https://www.paypal.com/sdk/js?client-id={{ client_id }}&currency=USD"></script>
+
+    <script>
+        const splitBtn = document.getElementById('split-btn');
+        const voiceBtn = document.getElementById('voice-btn');
+        const photoBtn = document.getElementById('photo-btn');
+        const receiptInput = document.getElementById('receipt-input');
+        const receiptPreviewBar = document.getElementById('receipt-preview-bar');
+        const receiptThumb = document.getElementById('receipt-thumb');
+        const receiptName = document.getElementById('receipt-name');
+        const receiptRemoveBtn = document.getElementById('receipt-remove-btn');
+        const billInput = document.getElementById('bill');
+        const micStatus = document.getElementById('mic-status');
+        const errorBanner = document.getElementById('error-banner');
+        const resultsContainer = document.getElementById('results-container');
+        const summaryTotal = document.getElementById('summary-total');
+        const taxTag = document.getElementById('tax-tag');
+        const payerSelect = document.getElementById('payer-select');
+        const peopleList = document.getElementById('people-list');
+        const aiCheckNote = document.getElementById('ai-check-note');
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const themeText = document.getElementById('theme-text');
+
+        let currentSplitId = null;
+        let pollTimer = null;
+        let currentImageBase64 = null;
+        let currentImageMime = 'image/jpeg';
+
+        // ==========================================
+        // 1. Dark / Light Theme Toggle
+        // ==========================================
+        const savedTheme = localStorage.getItem('splitpal-theme') || 'dark';
+        if (savedTheme === 'light') {
+            document.body.classList.add('light-mode');
+            themeIcon.textContent = '🌙';
+            themeText.textContent = 'Dark';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            const isLight = document.body.classList.toggle('light-mode');
+            if (isLight) {
+                themeIcon.textContent = '🌙';
+                themeText.textContent = 'Dark';
+                localStorage.setItem('splitpal-theme', 'light');
+            } else {
+                themeIcon.textContent = '☀️';
+                themeText.textContent = 'Light';
+                localStorage.setItem('splitpal-theme', 'dark');
+            }
+        });
+
+        // Quick example loader
+        function clearReceiptImage() {
+            currentImageBase64 = null;
+            receiptInput.value = '';
+            receiptPreviewBar.style.display = 'none';
+        }
+
+        receiptRemoveBtn.addEventListener('click', clearReceiptImage);
+
+        photoBtn.addEventListener('click', () => {
+            receiptInput.click();
+        });
+
+        receiptInput.addEventListener('change', (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Resize & compress on canvas so Gemini Vision responds in ~1-2s
+                    const maxDim = 900;
+                    let w = img.width;
+                    let h = img.height;
+                    if (w > maxDim || h > maxDim) {
+                        if (w > h) {
+                            h = Math.round((h * maxDim) / w);
+                            w = maxDim;
+                        } else {
+                            w = Math.round((w * maxDim) / h);
+                            h = maxDim;
+                        }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+                    currentImageBase64 = dataUrl.split(',')[1];
+                    currentImageMime = 'image/jpeg';
+                    receiptThumb.src = dataUrl;
+                    receiptName.textContent = '📷 ' + file.name;
+                    receiptPreviewBar.style.display = 'flex';
+                    if (!billInput.value.trim() || billInput.value.includes('Biryani 3.50')) {
+                        billInput.value = "People: Yethies, Ravi, Anu. Split items from the receipt photo (Ravi didn't have starters)";
+                    }
+                };
+                img.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function loadSampleReceipt() {
+            // Generate a crisp visual restaurant receipt on canvas for 1-click judge testing
+            const canvas = document.createElement('canvas');
+            canvas.width = 420;
+            canvas.height = 500;
+            const ctx = canvas.getContext('2d');
+
+            // Paper background
+            ctx.fillStyle = '#fffdf7';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Header
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold 22px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('SPICE GARDEN BISTRO', 210, 48);
+            ctx.font = '13px monospace';
+            ctx.fillText('Table #12  •  Dine-In Receipt', 210, 72);
+
+            ctx.beginPath();
+            ctx.setLineDash([5, 4]);
+            ctx.moveTo(30, 92);
+            ctx.lineTo(390, 92);
+            ctx.strokeStyle = '#64748b';
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Line items
+            ctx.textAlign = 'left';
+            ctx.font = 'bold 16px monospace';
+            const lines = [
+                ['1x Hyderabadi Biryani', '$3.50'],
+                ['2x Paneer Starters', '$4.00'],
+                ['3x Fresh Mango Juices', '$2.70'],
+            ];
+            let y = 135;
+            lines.forEach(([item, price]) => {
+                ctx.textAlign = 'left';
+                ctx.fillText(item, 36, y);
+                ctx.textAlign = 'right';
+                ctx.fillText(price, 384, y);
+                y += 42;
+            });
+
+            ctx.beginPath();
+            ctx.setLineDash([5, 4]);
+            ctx.moveTo(30, y - 10);
+            ctx.lineTo(390, y - 10);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            y += 26;
+            ctx.font = '15px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('Subtotal', 36, y);
+            ctx.textAlign = 'right';
+            ctx.fillText('$10.20', 384, y);
+
+            y += 32;
+            ctx.textAlign = 'left';
+            ctx.fillText('Tax (5%)', 36, y);
+            ctx.textAlign = 'right';
+            ctx.fillText('$0.51', 384, y);
+
+            y += 42;
+            ctx.font = 'bold 20px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('TOTAL', 36, y);
+            ctx.textAlign = 'right';
+            ctx.fillText('$10.71', 384, y);
+
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+            currentImageBase64 = dataUrl.split(',')[1];
+            currentImageMime = 'image/jpeg';
+            receiptThumb.src = dataUrl;
+            receiptName.textContent = '🧾 Spice_Garden_Receipt.jpg (Sample)';
+            receiptPreviewBar.style.display = 'flex';
+            billInput.value = "People: Yethies, Ravi, Anu. Ravi didn't have Paneer Starters.";
+            showError('');
+        }
+
+        function loadExample(num) {
+            clearReceiptImage();
+            if (num === 1) {
+                billInput.value = "People: Yethies, Ravi, Anu. Biryani 3.50, 2 paneer starters 4.00, 3 juices 2.70, tax 5%, Ravi didn't have starters";
+            } else {
+                billInput.value = "Friends: Alex, Jordan, Sam. 3 cold brews 12.00, 2 croissants 7.50, tax 8%, Sam only had coffee";
+            }
+            showError('');
+        }
+
+        function showError(msg) {
+            if (!msg) {
+                errorBanner.style.display = 'none';
+                errorBanner.textContent = '';
+            } else {
+                errorBanner.style.display = 'block';
+                errorBanner.textContent = msg;
+            }
+        }
+
+        // ==========================================
+        // 2. Real-Time Voice Transcription 🎙️
+        // ==========================================
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+            voiceBtn.addEventListener('click', () => {
+                alert('Real-time voice recognition is supported in Google Chrome and Microsoft Edge. Please open SplitPal in Chrome or Edge.');
+            });
+        } else {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            let isRecording = false;
+
+            voiceBtn.addEventListener('click', () => {
+                if (isRecording) {
+                    stopRealtimeVoice();
+                    return;
+                }
+
+                // START Realtime Recording
+                showError('');
+                billInput.value = '';
+                billInput.placeholder = '🎙️ Listening... Words will appear in real time as you talk!';
+                micStatus.textContent = '🟢 Listening... Speak your bill clearly.';
+
+                try {
+                    recognition.start();
+                    isRecording = true;
+                    voiceBtn.classList.add('recording');
+                    voiceBtn.innerHTML = '🛑 Stop & Split';
+                } catch (e) {
+                    console.error('Speech recognition start error:', e);
+                    if (e.name === 'InvalidStateError') {
+                        isRecording = true;
+                        voiceBtn.classList.add('recording');
+                        voiceBtn.innerHTML = '🛑 Stop & Split';
+                    } else {
+                        showError('Could not start microphone: ' + e.message);
+                    }
+                }
+            });
+
+            recognition.onresult = (event) => {
+                let finalStr = '';
+                let interimStr = '';
+                for (let i = 0; i < event.results.length; i++) {
+                    if (event.results[i].isFinal) {
+                        finalStr += event.results[i][0].transcript + ' ';
+                    } else {
+                        interimStr += event.results[i][0].transcript;
+                    }
+                }
+                const liveText = (finalStr + interimStr).trim();
+                billInput.value = liveText;
+                micStatus.textContent = '🎙️ Transcribing live: "' + liveText.slice(-35) + '"';
+            };
+
+            recognition.onerror = (event) => {
+                console.warn('Speech error:', event.error);
+                if (event.error === 'not-allowed') {
+                    showError('Microphone permission blocked! Please click the icon in your address bar to allow Microphone.');
+                    stopRealtimeVoice(false);
+                } else if (event.error === 'network') {
+                    micStatus.textContent = '⚠️ Speech recognition network connection slow.';
+                }
+            };
+
+            recognition.onend = () => {
+                if (isRecording) {
+                    // Chrome pauses on brief silence; restart to keep real-time transcription active
+                    try {
+                        recognition.start();
+                    } catch (e) {}
+                }
+            };
+
+            function stopRealtimeVoice(triggerSplit = true) {
+                isRecording = false;
+                try {
+                    recognition.stop();
+                } catch (e) {}
+                voiceBtn.classList.remove('recording');
+                voiceBtn.innerHTML = '🎙️ Record Voice';
+                billInput.placeholder = 'Paste your messy bill or tap Record Voice...';
+
+                const spokenText = billInput.value.trim();
+                if (spokenText.length > 0) {
+                    micStatus.textContent = '✓ Voice captured in real-time! Splitting with AI...';
+                    if (triggerSplit) {
+                        splitBtn.click();
+                    }
+                } else {
+                    micStatus.textContent = 'No speech detected. Please speak clearly into your mic.';
+                }
+            }
+        }
+
+        // ==========================================
+        // 3. Text Split Action
+        // ==========================================
+        splitBtn.addEventListener('click', () => {
+            showError('');
+            if (pollTimer) clearInterval(pollTimer);
+
+            splitBtn.disabled = true;
+            splitBtn.textContent = 'Analyzing with Gemini...';
+            micStatus.textContent = '';
+
+            fetch('/split', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    bill: billInput.value,
+                    image_base64: currentImageBase64,
+                    image_mime: currentImageMime
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    showError(data.error);
+                    resultsContainer.style.display = 'none';
+                    return;
+                }
+                currentSplitId = data.split_id;
+                renderSplit(data);
+                startStatusPolling();
+            })
+            .catch(() => showError('Could not reach server.'))
+            .finally(() => {
+                splitBtn.disabled = false;
+                splitBtn.textContent = '⚡ Split with AI';
+            });
+        });
+
+        let celebrationTriggered = false;
+
+        function checkAllSettled(people) {
+            const banner = document.getElementById('settled-banner');
+            if (!people || people.length === 0) return;
+
+            const allDone = people.every(p => p.status === 'Paid' || p.status === 'Covered Bill');
+            if (allDone) {
+                banner.style.display = 'block';
+                if (!celebrationTriggered) {
+                    celebrationTriggered = true;
+                    // Multi-stage celebratory confetti party burst!
+                    if (typeof confetti === 'function') {
+                        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                        setTimeout(() => {
+                            confetti({ particleCount: 60, angle: 60, spread: 55, origin: { x: 0.1, y: 0.6 } });
+                            confetti({ particleCount: 60, angle: 120, spread: 55, origin: { x: 0.9, y: 0.6 } });
+                        }, 250);
+                    }
+                }
+            } else {
+                banner.style.display = 'none';
+                celebrationTriggered = false;
+            }
+        }
+
+        // ==========================================
+        // 4. Render Split & People Cards
+        // ==========================================
+        function renderSplit(data) {
+            resultsContainer.style.display = 'block';
+            summaryTotal.textContent = '$' + data.total;
+            taxTag.textContent = 'Tax ' + data.tax_percent + '%';
+            aiCheckNote.textContent = '✓ ' + (data.ai_check || 'Calculation verified exactly');
+
+            // Populate Payer Dropdown
+            payerSelect.innerHTML = '';
+            data.people.forEach((p, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.textContent = p.name;
+                if (idx === (data.payer_index || 0)) opt.selected = true;
+                payerSelect.appendChild(opt);
+            });
+
+            renderPeopleCards(data.people, data.split_id, data.payer_index || 0);
+            checkAllSettled(data.people);
+
+            // Smooth auto-scroll to the verified payment breakdown
+            setTimeout(() => {
+                resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 120);
+        }
+
+        function renderPeopleCards(people, splitId, payerIndex) {
+            peopleList.innerHTML = '';
+
+            people.forEach((person, index) => {
+                const card = document.createElement('div');
+                card.className = 'person-card';
+                card.id = 'person-card-' + index;
+
+                // Left Column: Details & Payments
+                const infoCol = document.createElement('div');
+                infoCol.className = 'person-info-col';
+
+                const top = document.createElement('div');
+                top.className = 'person-top';
+
+                const nameEl = document.createElement('div');
+                nameEl.className = 'person-name';
+                nameEl.textContent = person.name;
+
+                const amountEl = document.createElement('div');
+                amountEl.className = 'person-amount';
+                amountEl.textContent = '$' + person.amount;
+
+                top.appendChild(nameEl);
+                top.appendChild(amountEl);
+                infoCol.appendChild(top);
+
+                // Badge + optional PayPal Capture Transaction ID
+                const badgeRow = document.createElement('div');
+                badgeRow.style.display = 'flex';
+                badgeRow.style.alignItems = 'center';
+                badgeRow.style.flexWrap = 'wrap';
+                badgeRow.style.gap = '6px';
+
+                const badge = document.createElement('span');
+                badge.className = 'status-badge ' + getBadgeClass(person.status);
+                badge.textContent = person.status;
+                badgeRow.appendChild(badge);
+
+                const capturePill = document.createElement('span');
+                capturePill.className = 'capture-ref-pill';
+                capturePill.id = 'capture-ref-' + index;
+                if (person.status === 'Paid' && person.capture_id) {
+                    capturePill.textContent = '✓ PayPal Ref #' + person.capture_id;
+                    capturePill.style.display = 'inline-block';
+                } else {
+                    capturePill.style.display = 'none';
+                }
+                badgeRow.appendChild(capturePill);
+                infoCol.appendChild(badgeRow);
+
+                // Itemized Per-Person Breakdown ("Why am I paying this?")
+                if ((person.items && person.items.length > 0) || (person.excluded && person.excluded.length > 0)) {
+                    const breakdownEl = document.createElement('div');
+                    breakdownEl.className = 'item-breakdown';
+
+                    if (person.items) {
+                        person.items.forEach(it => {
+                            const pill = document.createElement('span');
+                            pill.className = 'item-pill';
+                            const splitWay = it.split_way > 1 ? ` (1/${it.split_way})` : '';
+                            pill.innerHTML = `🍽️ ${it.name}${splitWay}: <strong>$${it.share}</strong>`;
+                            breakdownEl.appendChild(pill);
+                        });
+                    }
+
+                    if (person.tax_amount && parseFloat(person.tax_amount) > 0) {
+                        const taxPill = document.createElement('span');
+                        taxPill.className = 'item-pill';
+                        taxPill.innerHTML = `+Tax: <strong>$${person.tax_amount}</strong>`;
+                        breakdownEl.appendChild(taxPill);
+                    }
+
+                    if (person.excluded && person.excluded.length > 0) {
+                        const exPill = document.createElement('span');
+                        exPill.className = 'item-pill-excluded';
+                        exPill.textContent = '🚫 Excluded: ' + person.excluded.join(', ');
+                        breakdownEl.appendChild(exPill);
+                    }
+
+                    infoCol.appendChild(breakdownEl);
+                }
+
+                if (person.status === 'Pending') {
+                    const payUrl = window.location.origin + '/pay/' + splitId + '/' + index;
+
+                    const linkActions = document.createElement('div');
+                    linkActions.className = 'link-actions';
+
+                    const copyBtn = document.createElement('button');
+                    copyBtn.className = 'btn-link';
+                    copyBtn.innerHTML = '📋 Copy Link';
+                    copyBtn.onclick = () => {
+                        navigator.clipboard.writeText(payUrl);
+                        copyBtn.innerHTML = '✓ Copied!';
+                        setTimeout(() => copyBtn.innerHTML = '📋 Copy Link', 2000);
+                    };
+
+                    // WhatsApp Share Button with itemized breakdown
+                    const itemSummary = (person.items || []).map(i => `${i.name} ($${i.share})`).join(', ');
+                    const waText = `Hi ${person.name}! 👋 Your verified SplitPal share is $${person.amount}${itemSummary ? ' (' + itemSummary + ' + tax)' : ''}. Pay securely via PayPal here: ${payUrl}`;
+                    const waBtn = document.createElement('a');
+                    waBtn.className = 'btn-link btn-whatsapp';
+                    waBtn.href = 'https://wa.me/?text=' + encodeURIComponent(waText);
+                    waBtn.target = '_blank';
+                    waBtn.innerHTML = '💬 WhatsApp';
+
+                    const openBtn = document.createElement('a');
+                    openBtn.className = 'btn-link';
+                    openBtn.href = payUrl;
+                    openBtn.target = '_blank';
+                    openBtn.innerHTML = '↗️ Friend View';
+
+                    // Right Column: QR Code side-by-side inside the card (with Show/Hide toggle)
+                    const qrCol = document.createElement('div');
+                    qrCol.className = 'person-qr-col';
+                    qrCol.id = 'qr-col-' + index;
+
+                    const qrToggleBtn = document.createElement('button');
+                    qrToggleBtn.className = 'btn-link';
+                    qrToggleBtn.type = 'button';
+                    qrToggleBtn.innerHTML = '🙈 Hide QR';
+                    qrToggleBtn.onclick = () => {
+                        const isHidden = qrCol.style.display === 'none';
+                        qrCol.style.display = isHidden ? 'flex' : 'none';
+                        qrToggleBtn.innerHTML = isHidden ? '🙈 Hide QR' : '📱 Show QR';
+                    };
+
+                    linkActions.appendChild(copyBtn);
+                    linkActions.appendChild(waBtn);
+                    linkActions.appendChild(openBtn);
+                    linkActions.appendChild(qrToggleBtn);
+                    infoCol.appendChild(linkActions);
+
+                    // Inline PayPal Checkout Button
+                    const paypalBox = document.createElement('div');
+                    paypalBox.className = 'paypal-box';
+                    const errBox = document.createElement('div');
+                    errBox.style.color = '#ef4444';
+                    errBox.style.fontSize = '12px';
+                    errBox.style.marginTop = '6px';
+
+                    infoCol.appendChild(paypalBox);
+                    infoCol.appendChild(errBox);
+                    renderPaypalButton(splitId, index, paypalBox, badge, capturePill, errBox, card);
+
+                    const qrImg = document.createElement('img');
+                    qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=' + encodeURIComponent(payUrl);
+                    qrImg.alt = 'Scan to Pay';
+                    qrImg.style.width = '115px';
+                    qrImg.style.height = '115px';
+                    qrImg.style.display = 'block';
+                    qrImg.style.borderRadius = '6px';
+
+                    const qrLabel = document.createElement('div');
+                    qrLabel.style.fontSize = '11px';
+                    qrLabel.style.fontWeight = '700';
+                    qrLabel.style.color = '#0f172a';
+                    qrLabel.style.marginTop = '6px';
+                    qrLabel.textContent = '📱 Scan $' + person.amount;
+
+                    qrCol.appendChild(qrImg);
+                    qrCol.appendChild(qrLabel);
+
+                    card.appendChild(infoCol);
+                    card.appendChild(qrCol);
+                } else if (person.status === 'Covered Bill') {
+                    const note = document.createElement('div');
+                    note.style.fontSize = '12px';
+                    note.style.color = 'var(--covered-text)';
+                    note.style.marginTop = '8px';
+                    note.textContent = 'Covered bill at the restaurant. Friends pay them back.';
+                    infoCol.appendChild(note);
+                    card.appendChild(infoCol);
+                } else {
+                    card.appendChild(infoCol);
+                }
+
+                peopleList.appendChild(card);
+            });
+        }
+
+        function getBadgeClass(status) {
+            if (status === 'Paid') return 'status-paid';
+            if (status === 'Covered Bill') return 'status-covered';
+            return 'status-pending';
+        }
+
+        // ==========================================
+        // 5. Change Who Paid Restaurant
+        // ==========================================
+        payerSelect.addEventListener('change', () => {
+            const payerIdx = payerSelect.value;
+            fetch('/split/' + currentSplitId + '/set-payer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ payer_index: payerIdx })
+            })
+            .then(res => res.json())
+            .then(data => {
+                renderPeopleCards(data.people, currentSplitId, data.payer_index);
+            });
+        });
+
+        // ==========================================
+        // 6. Inline PayPal Button Renderer
+        // ==========================================
+        function renderPaypalButton(splitId, index, container, badgeEl, capturePillEl, errBox, cardEl) {
+            paypal.Buttons({
+                style: { layout: 'horizontal', height: 35, tagline: false, shape: 'rect' },
+                createOrder: function () {
+                    errBox.textContent = '';
+                    return fetch('/create-order', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ split_id: splitId, person: index })
+                    })
+                    .then(res => res.json())
+                    .then(order => {
+                        if (!order.id) {
+                            errBox.textContent = order.error || 'Could not create order';
+                            throw new Error(errBox.textContent);
+                        }
+                        return order.id;
+                    });
+                },
+                onApprove: function (data) {
+                    return fetch('/capture-order/' + data.orderID, { method: 'POST' })
+                    .then(res => res.json())
+                    .then(result => {
+                        if (result.status === 'COMPLETED') {
+                            badgeEl.textContent = 'Paid';
+                            badgeEl.className = 'status-badge status-paid';
+                            if (result.capture_id && capturePillEl) {
+                                capturePillEl.textContent = '✓ PayPal Ref #' + result.capture_id;
+                                capturePillEl.style.display = 'inline-block';
+                            }
+                            container.remove();
+                            if (cardEl) {
+                                const linkActions = cardEl.querySelector('.link-actions');
+                                if (linkActions) linkActions.remove();
+                                const qrCol = cardEl.querySelector('.person-qr-col');
+                                if (qrCol) qrCol.remove();
+                            }
+                            // Sync status & check for party pop!
+                            fetch('/split/' + splitId + '/status')
+                            .then(r => r.json())
+                            .then(st => { if (st && st.people) checkAllSettled(st.people); });
+                        } else {
+                            errBox.textContent = result.error || 'Payment failed';
+                        }
+                    });
+                }
+            }).render(container);
+        }
+
+        // ==========================================
+        // 7. Live Polling (Sync every 3s)
+        // ==========================================
+        function startStatusPolling() {
+            if (pollTimer) clearInterval(pollTimer);
+            pollTimer = setInterval(() => {
+                if (!currentSplitId) return;
+                fetch('/split/' + currentSplitId + '/status')
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.people) {
+                        data.people.forEach((p, idx) => {
+                            const card = document.getElementById('person-card-' + idx);
+                            if (card) {
+                                const badge = card.querySelector('.status-badge');
+                                const capturePill = document.getElementById('capture-ref-' + idx);
+                                if (p.status === 'Paid' && p.capture_id && capturePill) {
+                                    capturePill.textContent = '✓ PayPal Ref #' + p.capture_id;
+                                    capturePill.style.display = 'inline-block';
+                                }
+                                if (badge && badge.textContent !== p.status) {
+                                    badge.textContent = p.status;
+                                    badge.className = 'status-badge ' + getBadgeClass(p.status);
+                                    if (p.status === 'Paid') {
+                                        const paypalBox = card.querySelector('.paypal-box');
+                                        if (paypalBox) paypalBox.remove();
+                                        const linkActions = card.querySelector('.link-actions');
+                                        if (linkActions) linkActions.remove();
+                                        const qrCol = card.querySelector('.person-qr-col');
+                                        if (qrCol) qrCol.remove();
+                                    }
+                                }
+                            }
+                        });
+                        checkAllSettled(data.people);
+                    }
+                })
+                .catch(() => {});
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
