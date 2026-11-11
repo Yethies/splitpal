@@ -703,13 +703,13 @@
         </div>
 
         <!-- Input Area -->
-        <textarea id="bill" rows="5" placeholder="Type or paste your bill, scan a receipt + who attended, or tap Speak Bill...">People: Yethies, Ravi, Anu. Biryani 3.50, 2 paneer starters 4.00, 3 juices 2.70, tax 5%, Ravi didn't have starters</textarea>
+        <textarea id="bill" rows="5" placeholder="Type or paste your bill, upload a receipt + who attended, or tap Speak Bill...">People: Yethies, Ravi, Anu. Biryani 3.50, 2 paneer starters 4.00, 3 juices 2.70, tax 5%, Ravi didn't have starters</textarea>
 
         <!-- Actions -->
         <input type="file" id="receipt-input" accept="image/*" style="display:none;">
         <div class="action-bar">
             <button id="photo-btn" class="btn-voice" type="button">
-                📷 Scan Receipt
+                📷 Upload Receipt
             </button>
             <button id="voice-btn" class="btn-voice" type="button">
                 🎙️ Speak Bill
@@ -968,7 +968,7 @@
             voiceBtn.innerHTML = on ? '🛑 Stop & Split' : '🎙️ Speak Bill';
             billInput.placeholder = on
                 ? '🎙️ Listening... speak your bill clearly!'
-                : 'Type or paste your bill, scan a receipt + who attended, or tap Speak Bill...';
+                : 'Type or paste your bill, upload a receipt + who attended, or tap Speak Bill...';
         }
 
         function micBlockedHelp() {

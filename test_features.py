@@ -35,7 +35,7 @@ home = client.get("/")
 assert home.status_code == 200
 html = home.get_data(as_text=True)
 assert "loadSampleReceipt()" in html
-assert "📷 Scan Receipt" in html
+assert "📷 Upload Receipt" in html
 assert "💬 WhatsApp" in html
 assert "📱 Show QR" in html
 
