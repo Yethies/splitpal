@@ -39,6 +39,14 @@ assert "📷 Receipt Photo" in html
 assert "💬 WhatsApp" in html
 assert "🙈 Hide QR" in html
 
+# Logo + favicons are linked and served
+assert "/static/img/icon-192.png" in html
+assert 'property="og:image"' in html
+for f in ["icon-32.png", "icon-180.png", "icon-192.png", "logo-wordmark.jpg", "logo-icon.jpg"]:
+    r = client.get(f"/static/img/{f}")
+    assert r.status_code == 200, f"Logo file missing: {f}"
+    r.close()
+
 # Seed a split in SPLITS and test /status, /set-payer, and /pay/<id>/<idx>
 split_id = "testsplit123"
 SPLITS[split_id] = {

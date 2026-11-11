@@ -4,6 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SplitPal - AI Bill Splitter & PayPal Checkout</title>
+    <!-- Logo / Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/img/icon-32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/img/icon-192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/img/icon-180.png">
+    <meta name="theme-color" content="#000000">
+    <meta name="description" content="Split messy restaurant bills with AI (text, voice, or receipt photo) and settle every share instantly with PayPal.">
+    <!-- Link preview (WhatsApp, Slack, Devpost) -->
+    <meta property="og:title" content="SplitPal - AI Bill Splitter & PayPal Checkout">
+    <meta property="og:description" content="Split messy restaurant bills with AI and settle every share instantly with PayPal.">
+    <meta property="og:image" content="{{ request.url_root }}static/img/logo-wordmark.jpg">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
     <!-- Confetti Party Pop Effect -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
     <style>
@@ -121,6 +133,14 @@
             font-weight: normal;
             color: var(--text-main);
             letter-spacing: 1.5px;
+        }
+
+        .brand-logo {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: block;
+            filter: drop-shadow(0 4px 12px rgba(0, 192, 243, 0.35));
         }
 
         .brand-badge {
@@ -601,7 +621,8 @@
         <!-- Header -->
         <div class="header">
             <h1 class="brand-title">
-                💸 SplitPal
+                <img src="/static/img/icon-192.png" alt="SplitPal logo" class="brand-logo">
+                SplitPal
                 <span class="brand-badge">Gemini + PayPal</span>
             </h1>
             <button id="theme-toggle" class="theme-toggle-btn" type="button">

@@ -1,4 +1,8 @@
-# 💸 SplitPal — AI Bill Splitter & Instant PayPal Settlement
+<p align="center">
+  <img src="static/img/logo-wordmark.jpg" alt="SplitPal logo" width="520">
+</p>
+
+# SplitPal — AI Bill Splitter & Instant PayPal Settlement
 
 **SplitPal** turns messy group restaurant bills—typed notes, real-time voice recordings, or uploaded receipt photos with exceptions like *"Ravi didn't have starters"*—into **cent-verified individual PayPal checkouts**, shareable friend payment links, QR codes, and WhatsApp payment requests.
 
