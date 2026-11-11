@@ -35,9 +35,9 @@ home = client.get("/")
 assert home.status_code == 200
 html = home.get_data(as_text=True)
 assert "loadSampleReceipt()" in html
-assert "📷 Receipt Photo" in html
+assert "📷 Scan Receipt" in html
 assert "💬 WhatsApp" in html
-assert "🙈 Hide QR" in html
+assert "📱 Show QR" in html
 
 # Logo + favicons are linked and served
 assert "/static/img/icon-192.png" in html

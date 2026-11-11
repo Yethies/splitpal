@@ -82,15 +82,11 @@ def ask_gemini(bill_text=None, audio_base64=None, mime_type="audio/webm", image_
     if not api_key:
         raise SplitError("GEMINI_API_KEY is missing from .env")
 
-    # Multimodal audio requires gemini-3.8-flash
-    if audio_base64:
-        models = ["gemini-3.8-flash"]
-    else:
-        models = [
-            m.strip()
-            for m in os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite,gemini-3.8-flash").split(",")
-            if m.strip()
-        ]
+    models = [
+        m.strip()
+        for m in os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite,gemini-3.8-flash").split(",")
+        if m.strip()
+    ]
 
     clean_mime = (mime_type or "audio/webm").split(";")[0].strip()
     clean_img_mime = (image_mime or "image/jpeg").split(";")[0].strip()

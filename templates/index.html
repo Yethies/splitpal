@@ -452,9 +452,7 @@
         }
 
         @media (max-width: 640px) {
-            .main-card { padding: 22px 18px; border-radius: 28px; }
-            .person-card { flex-direction: column; align-items: stretch; border-radius: 24px; }
-            .person-qr-col { align-self: center; margin-top: 12px; }
+            .person-card { flex-direction: column; align-items: stretch; }
         }
 
         .person-top {
@@ -613,6 +611,60 @@
             text-align: center;
             margin-top: 18px;
         }
+
+        .btn-voice, .btn-split { white-space: nowrap; }
+        .qr-link { display: block; line-height: 0; }
+
+        /* ==========================================
+           Mobile layout (phones)
+           ========================================== */
+        @media (max-width: 640px) {
+            body { padding: 14px 10px; }
+            .main-card { padding: 20px 16px; border-radius: 28px; }
+
+            /* Header: logo + name left, icon-only theme toggle right */
+            .brand-title { font-size: 28px; gap: 10px; }
+            .brand-logo { width: 38px; height: 38px; border-radius: 10px; }
+            .theme-toggle-btn { padding: 8px 11px; }
+            #theme-text { display: none; }
+            .tagline { font-size: 12.5px; margin-bottom: 14px; }
+
+            /* Example chips: one swipeable row instead of wrapping */
+            .quick-examples {
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                scrollbar-width: none;
+                padding-bottom: 2px;
+                margin-right: -16px;
+                padding-right: 16px;
+            }
+            .quick-examples::-webkit-scrollbar { display: none; }
+            .chip-btn { flex-shrink: 0; }
+
+            textarea { font-size: 15px; padding: 14px; border-radius: 18px; }
+
+            /* Buttons: Scan + Speak side by side, big Split button full width below */
+            .action-bar {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+            .btn-voice { font-size: 17px; padding: 12px 10px; }
+            .btn-split { grid-column: 1 / -1; font-size: 20px; padding: 14px; }
+
+            /* Results */
+            .summary-box { padding: 16px 18px; border-radius: 22px; }
+            .summary-total { font-size: 34px; margin-bottom: 10px; }
+            .payer-row { flex-wrap: wrap; gap: 8px; }
+
+            .person-card { padding: 16px; border-radius: 22px; gap: 12px; }
+            .person-info-col { min-width: 0; }
+            .person-name { font-size: 24px; }
+            .person-amount { font-size: 26px; }
+            .link-actions { gap: 6px; }
+            .btn-link { flex: 1 1 auto; justify-content: center; font-size: 11.5px; padding: 8px 10px; }
+            .person-qr-col { align-self: center; }
+        }
     </style>
 </head>
 <body>
@@ -623,20 +675,19 @@
             <h1 class="brand-title">
                 <img src="/static/img/icon-192.png" alt="SplitPal logo" class="brand-logo">
                 SplitPal
-                <span class="brand-badge">Gemini + PayPal</span>
             </h1>
-            <button id="theme-toggle" class="theme-toggle-btn" type="button">
+            <button id="theme-toggle" class="theme-toggle-btn" type="button" aria-label="Toggle light / dark mode">
                 <span id="theme-icon">☀️</span> <span id="theme-text">Light</span>
             </button>
         </div>
-        <div class="tagline">Smart AI bill splitting powered by Gemini multimodal intelligence and instant PayPal payments.</div>
+        <div class="tagline">Paste, speak, or snap a bill. <strong>Gemini AI</strong> splits it to the exact cent, and friends pay you back with <strong>PayPal</strong>.</div>
 
         <!-- Quick Example Chips -->
         <div class="quick-examples">
-            <span class="chip-label">Try Example:</span>
-            <button class="chip-btn" type="button" onclick="loadExample(1)">🍕 Dinner Split</button>
-            <button class="chip-btn" type="button" onclick="loadExample(2)">☕ Coffee & Pastries</button>
-            <button class="chip-btn" type="button" onclick="loadSampleReceipt()">🧾 Sample Receipt Photo</button>
+            <span class="chip-label">Try:</span>
+            <button class="chip-btn" type="button" onclick="loadExample(1)">🍕 Dinner</button>
+            <button class="chip-btn" type="button" onclick="loadExample(2)">☕ Coffee</button>
+            <button class="chip-btn" type="button" onclick="loadSampleReceipt()">🧾 Sample Receipt</button>
         </div>
 
         <!-- Receipt Photo Preview Bar -->
@@ -652,16 +703,16 @@
         </div>
 
         <!-- Input Area -->
-        <textarea id="bill" rows="5" placeholder="Paste your messy bill, upload a receipt photo + who attended, or tap Record Voice...">People: Yethies, Ravi, Anu. Biryani 3.50, 2 paneer starters 4.00, 3 juices 2.70, tax 5%, Ravi didn't have starters</textarea>
+        <textarea id="bill" rows="5" placeholder="Type or paste your bill, scan a receipt + who attended, or tap Speak Bill...">People: Yethies, Ravi, Anu. Biryani 3.50, 2 paneer starters 4.00, 3 juices 2.70, tax 5%, Ravi didn't have starters</textarea>
 
         <!-- Actions -->
         <input type="file" id="receipt-input" accept="image/*" style="display:none;">
         <div class="action-bar">
             <button id="photo-btn" class="btn-voice" type="button">
-                📷 Receipt Photo
+                📷 Scan Receipt
             </button>
             <button id="voice-btn" class="btn-voice" type="button">
-                🎙️ Record Voice
+                🎙️ Speak Bill
             </button>
             <button id="split-btn" class="btn-split" type="button">
                 ⚡ Split with AI
@@ -902,52 +953,157 @@
         }
 
         // ==========================================
-        // 2. Real-Time Voice Transcription 🎙️
+        // 2. Real-Time Voice Transcription + Mobile Audio Fallback 🎙️
         // ==========================================
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let usingFallbackRecorder = false;
+
+        function setRecordingUI(on) {
+            voiceBtn.classList.toggle('recording', on);
+            voiceBtn.innerHTML = on ? '🛑 Stop & Split' : '🎙️ Speak Bill';
+            billInput.placeholder = on
+                ? '🎙️ Listening... speak your bill clearly!'
+                : 'Type or paste your bill, scan a receipt + who attended, or tap Speak Bill...';
+        }
+
+        function micBlockedHelp() {
+            if (isMobile) {
+                return 'Microphone permission is turned off. Tap the tune/lock icon left of the address bar → Permissions → Microphone → Allow (or enable Microphone for Chrome in Android Settings → Apps → Chrome → Permissions).';
+            }
+            return 'Microphone is blocked. Click the tune/lock icon in your address bar → Microphone → Allow, then reload.';
+        }
+
+        // Fallback recorder using getUserMedia + /split-voice:
+        // Forces Chrome Mobile to show the native Microphone permission prompt when SpeechRecognition is blocked
+        async function startFallbackAudioRecorder() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showError(micBlockedHelp());
+                return;
+            }
+            try {
+                micStatus.textContent = '🎙️ Requesting microphone permission...';
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                usingFallbackRecorder = true;
+                isRecording = true;
+                audioChunks = [];
+                mediaRecorder = new MediaRecorder(stream);
+
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data && e.data.size > 0) audioChunks.push(e.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    stream.getTracks().forEach(t => t.stop());
+                    const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+                    if (blob.size < 800) {
+                        micStatus.textContent = 'Recording too short. Tap Speak Bill and speak for a few seconds.';
+                        return;
+                    }
+                    micStatus.textContent = '⚡ Transcribing & splitting voice with Gemini AI...';
+                    splitBtn.disabled = true;
+                    splitBtn.textContent = 'Analyzing Voice...';
+
+                    const formData = new FormData();
+                    formData.append('audio', blob, 'voice.webm');
+
+                    fetch('/split-voice', { method: 'POST', body: formData })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.error) {
+                                showError(data.error);
+                                micStatus.textContent = '';
+                                return;
+                            }
+                            if (data.transcription) {
+                                billInput.value = data.transcription;
+                            }
+                            micStatus.textContent = '✓ Voice transcribed & split!';
+                            currentSplitId = data.split_id;
+                            renderSplit(data);
+                            startStatusPolling();
+                        })
+                        .catch(() => showError('Could not reach server for voice split.'))
+                        .finally(() => {
+                            splitBtn.disabled = false;
+                            splitBtn.textContent = '⚡ Split with AI';
+                        });
+                };
+
+                mediaRecorder.start();
+                setRecordingUI(true);
+                micStatus.textContent = '🟢 Recording voice... Speak your bill, then tap Stop & Split.';
+            } catch (err) {
+                console.warn('getUserMedia fallback error:', err);
+                setRecordingUI(false);
+                isRecording = false;
+                micStatus.textContent = '';
+                showError(micBlockedHelp());
+            }
+        }
 
         if (!SpeechRecognition) {
             voiceBtn.addEventListener('click', () => {
-                alert('Real-time voice recognition is supported in Google Chrome and Microsoft Edge. Please open SplitPal in Chrome or Edge.');
+                if (isRecording && usingFallbackRecorder && mediaRecorder) {
+                    isRecording = false;
+                    usingFallbackRecorder = false;
+                    setRecordingUI(false);
+                    mediaRecorder.stop();
+                    return;
+                }
+                showError('');
+                startFallbackAudioRecorder();
             });
         } else {
             const recognition = new SpeechRecognition();
-            recognition.continuous = true;
+            recognition.continuous = !isMobile;
             recognition.interimResults = true;
             recognition.lang = 'en-US';
 
-            let isRecording = false;
+            let gotAudio = false;
+            let committedText = '';
+            let sessionText = '';
 
             voiceBtn.addEventListener('click', () => {
                 if (isRecording) {
-                    stopRealtimeVoice();
+                    if (usingFallbackRecorder && mediaRecorder) {
+                        isRecording = false;
+                        usingFallbackRecorder = false;
+                        setRecordingUI(false);
+                        mediaRecorder.stop();
+                    } else {
+                        stopRealtimeVoice(true);
+                    }
                     return;
                 }
 
-                // START Realtime Recording
+                // Start synchronously inside user tap so mobile & desktop preserve user gesture
                 showError('');
+                committedText = '';
+                sessionText = '';
+                gotAudio = false;
+                usingFallbackRecorder = false;
                 billInput.value = '';
-                billInput.placeholder = '🎙️ Listening... Words will appear in real time as you talk!';
-                micStatus.textContent = '🟢 Listening... Speak your bill clearly.';
 
                 try {
                     recognition.start();
                     isRecording = true;
-                    voiceBtn.classList.add('recording');
-                    voiceBtn.innerHTML = '🛑 Stop & Split';
+                    setRecordingUI(true);
+                    micStatus.textContent = '🟢 Listening... say the names, items, prices and tax.';
                 } catch (e) {
-                    console.error('Speech recognition start error:', e);
-                    if (e.name === 'InvalidStateError') {
-                        isRecording = true;
-                        voiceBtn.classList.add('recording');
-                        voiceBtn.innerHTML = '🛑 Stop & Split';
-                    } else {
-                        showError('Could not start microphone: ' + e.message);
-                    }
+                    console.warn('Speech recognition start error, using audio fallback:', e);
+                    startFallbackAudioRecorder();
                 }
             });
 
+            recognition.onstart = () => { gotAudio = true; };
+
             recognition.onresult = (event) => {
+                gotAudio = true;
                 let finalStr = '';
                 let interimStr = '';
                 for (let i = 0; i < event.results.length; i++) {
@@ -957,47 +1113,80 @@
                         interimStr += event.results[i][0].transcript;
                     }
                 }
-                const liveText = (finalStr + interimStr).trim();
+                sessionText = (finalStr + interimStr).trim();
+                const liveText = (committedText + ' ' + sessionText).trim();
                 billInput.value = liveText;
-                micStatus.textContent = '🎙️ Transcribing live: "' + liveText.slice(-35) + '"';
+                micStatus.textContent = '🎙️ Hearing: "' + liveText.slice(-35) + '"';
             };
 
             recognition.onerror = (event) => {
                 console.warn('Speech error:', event.error);
-                if (event.error === 'not-allowed') {
-                    showError('Microphone permission blocked! Please click the icon in your address bar to allow Microphone.');
+                const err = event.error;
+                if (err === 'not-allowed' || err === 'service-not-allowed') {
+                    if (gotAudio || billInput.value.trim().length > 0) {
+                        // Mic worked earlier; mobile browser simply ended the speech session
+                        finishWithoutSplit();
+                    } else {
+                        // SpeechRecognition was blocked without asking on mobile:
+                        // Immediately trigger getUserMedia fallback to force the native Mic permission prompt!
+                        isRecording = false;
+                        try { recognition.stop(); } catch (e) {}
+                        startFallbackAudioRecorder();
+                    }
+                } else if (err === 'audio-capture') {
+                    showError('No microphone found, or another app is using it.');
                     stopRealtimeVoice(false);
-                } else if (event.error === 'network') {
-                    micStatus.textContent = '⚠️ Speech recognition network connection slow.';
+                } else if (err === 'network') {
+                    micStatus.textContent = '⚠️ Voice service needs internet. Check your connection.';
                 }
             };
 
             recognition.onend = () => {
-                if (isRecording) {
-                    // Chrome pauses on brief silence; restart to keep real-time transcription active
-                    try {
-                        recognition.start();
-                    } catch (e) {}
+                committedText = (committedText + ' ' + sessionText).trim();
+                sessionText = '';
+                if (!isRecording || usingFallbackRecorder) return;
+
+                if (isMobile && committedText.length > 0) {
+                    // On mobile Chrome, SpeechRecognition automatically stops at the end of a spoken sentence;
+                    // auto-split right away instead of calling recognition.start() without a user tap!
+                    stopRealtimeVoice(true);
+                    return;
+                }
+
+                try {
+                    recognition.start();
+                } catch (e) {
+                    finishWithoutSplit();
                 }
             };
+
+            function finishWithoutSplit() {
+                isRecording = false;
+                try { recognition.stop(); } catch (e) {}
+                setRecordingUI(false);
+                if (billInput.value.trim().length > 0) {
+                    micStatus.textContent = '✓ Voice captured! Splitting with AI...';
+                    splitBtn.click();
+                } else {
+                    micStatus.textContent = 'No speech heard. Tap Speak Bill and try again.';
+                }
+            }
 
             function stopRealtimeVoice(triggerSplit = true) {
                 isRecording = false;
                 try {
                     recognition.stop();
                 } catch (e) {}
-                voiceBtn.classList.remove('recording');
-                voiceBtn.innerHTML = '🎙️ Record Voice';
-                billInput.placeholder = 'Paste your messy bill or tap Record Voice...';
+                setRecordingUI(false);
 
                 const spokenText = billInput.value.trim();
                 if (spokenText.length > 0) {
-                    micStatus.textContent = '✓ Voice captured in real-time! Splitting with AI...';
+                    micStatus.textContent = '✓ Voice captured! Splitting with AI...';
                     if (triggerSplit) {
                         splitBtn.click();
                     }
-                } else {
-                    micStatus.textContent = 'No speech detected. Please speak clearly into your mic.';
+                } else if (triggerSplit) {
+                    micStatus.textContent = 'No speech heard. Tap Speak Bill and speak clearly.';
                 }
             }
         }
@@ -1201,21 +1390,16 @@
                     waBtn.target = '_blank';
                     waBtn.innerHTML = '💬 WhatsApp';
 
-                    const openBtn = document.createElement('a');
-                    openBtn.className = 'btn-link';
-                    openBtn.href = payUrl;
-                    openBtn.target = '_blank';
-                    openBtn.innerHTML = '↗️ Friend View';
-
-                    // Right Column: QR Code side-by-side inside the card (with Show/Hide toggle)
+                    // Right Column: QR Code inside the card, HIDDEN until "Show QR" is pressed
                     const qrCol = document.createElement('div');
                     qrCol.className = 'person-qr-col';
                     qrCol.id = 'qr-col-' + index;
+                    qrCol.style.display = 'none';
 
                     const qrToggleBtn = document.createElement('button');
                     qrToggleBtn.className = 'btn-link';
                     qrToggleBtn.type = 'button';
-                    qrToggleBtn.innerHTML = '🙈 Hide QR';
+                    qrToggleBtn.innerHTML = '📱 Show QR';
                     qrToggleBtn.onclick = () => {
                         const isHidden = qrCol.style.display === 'none';
                         qrCol.style.display = isHidden ? 'flex' : 'none';
@@ -1224,7 +1408,6 @@
 
                     linkActions.appendChild(copyBtn);
                     linkActions.appendChild(waBtn);
-                    linkActions.appendChild(openBtn);
                     linkActions.appendChild(qrToggleBtn);
                     infoCol.appendChild(linkActions);
 
@@ -1243,19 +1426,28 @@
                     const qrImg = document.createElement('img');
                     qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=' + encodeURIComponent(payUrl);
                     qrImg.alt = 'Scan to Pay';
+                    qrImg.loading = 'lazy';
                     qrImg.style.width = '115px';
                     qrImg.style.height = '115px';
                     qrImg.style.display = 'block';
                     qrImg.style.borderRadius = '6px';
+
+                    // Tapping the QR opens the friend's pay page (handy for demos on one device)
+                    const qrLink = document.createElement('a');
+                    qrLink.className = 'qr-link';
+                    qrLink.href = payUrl;
+                    qrLink.target = '_blank';
+                    qrLink.title = "Open " + person.name + "'s pay page";
+                    qrLink.appendChild(qrImg);
 
                     const qrLabel = document.createElement('div');
                     qrLabel.style.fontSize = '11px';
                     qrLabel.style.fontWeight = '700';
                     qrLabel.style.color = '#0f172a';
                     qrLabel.style.marginTop = '6px';
-                    qrLabel.textContent = '📱 Scan $' + person.amount;
+                    qrLabel.textContent = 'Scan to pay $' + person.amount;
 
-                    qrCol.appendChild(qrImg);
+                    qrCol.appendChild(qrLink);
                     qrCol.appendChild(qrLabel);
 
                     card.appendChild(infoCol);
